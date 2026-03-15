@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Live Overlay</title>
+    <style>
+        body { background: transparent; margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        img { max-width: 90%; max-height: 90%; border: 8px solid white; border-radius: 20px; box-shadow: 0 0 30px rgba(0,0,0,0.8); transition: opacity 1s ease-in-out; }
+    </style>
+</head>
+<body>
+    <img id="display" src="">
+    <script>
+        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBt1gN-IvOAFqY1WfuKtM8kwksvO1462jNZQwB_eQQcGjcqfygtQNfveeUh9dWOv4JUWSommj2pSMc/pubhtml";
+
+        async function refreshImage() {
+            try {
+                const response = await fetch(csvUrl + "?t=" + new Date().getTime());
+                const text = await response.text();
+                const rows = text.split('\n');
+                const imageUrl = rows[1].split(',')[0].trim(); // Grabs the URL from A2
+                
+                const imgElement = document.getElementById('display');
+                if (imgElement.src !== imageUrl) {
+                    imgElement.src = imageUrl;
+                }
+            } catch (e) { console.error("Update failed", e); }
+        }
+
+        setInterval(refreshImage, 5000); // Checks for a new image every 5 seconds
+    </script>
+</body>
+</html>
