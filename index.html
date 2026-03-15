@@ -1,32 +1,91 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Live Overlay</title>
     <style>
-        body { background: transparent; margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        img { max-width: 90%; max-height: 90%; border: 8px solid white; border-radius: 20px; box-shadow: 0 0 30px rgba(0,0,0,0.8); transition: opacity 1s ease-in-out; }
+        /* This keeps the background transparent for TikTok Studio */
+        body { 
+            background: transparent; 
+            margin: 0; 
+            padding: 0;
+            overflow: hidden; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            font-family: Arial, sans-serif;
+        }
+
+        /* Styling for the Midjourney Art */
+        #display { 
+            max-width: 90%; 
+            max-height: 90%; 
+            border: 8px solid white; 
+            border-radius: 20px; 
+            box-shadow: 0 0 40px rgba(0,0,0,0.8); 
+            transition: opacity 1s ease-in-out; 
+            display: none; /* Hidden until the first image loads */
+        }
+
+        /* Optional: Style for the 'Ready!' status or Viewer Name if you want to add it later */
+        .overlay-text {
+            position: absolute;
+            bottom: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 10px;
+        }
     </style>
 </head>
 <body>
-    <img id="display" src="">
+
+    <img id="display" src="" alt="AI Generated Art">
+
     <script>
+        // YOUR CONFIGURATION
+        // Ensure this URL ends with ?output=csv
         const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBt1gN-IvOAFqY1WfuKtM8kwksvO1462jNZQwB_eQQcGjcgfygtQNfveeUh9dWOv4JUWSommj2pSMc/pub?output=csv";
+        const refreshRate = 5000; // Check for new art every 5 seconds
 
         async function refreshImage() {
             try {
-                const response = await fetch(csvUrl + "?t=" + new Date().getTime());
+                // Fetch the CSV with a timestamp to prevent browser caching
+                const response = await fetch(csvUrl + "&t=" + new Date().getTime());
                 const text = await response.text();
-                const rows = text.split('\n');
-                const imageUrl = rows[1].split(',')[0].trim(); // Grabs the URL from A2
                 
+                // Split the CSV into rows
+                const rows = text.split('\n');
+                
+                if (rows.length < 2) return; // Exit if sheet is empty
+
+                // Extract Column A, Row 2
+                // The .replace line cleans out quotes, curly brackets, and 'null:' text
+                let imageUrl = rows[1].split(',')[0]
+                                    .replace(/[{}"]/g, "")
+                                    .replace("null:", "")
+                                    .trim();
+
                 const imgElement = document.getElementById('display');
-                if (imgElement.src !== imageUrl) {
+
+                // Only update the source if we found a valid URL that is different from the current one
+                if (imageUrl.startsWith('http') && imgElement.src !== imageUrl) {
                     imgElement.src = imageUrl;
+                    imgElement.style.display = "block"; // Show the image once loaded
+                    console.log("New Art Loaded: " + imageUrl);
                 }
-            } catch (e) { console.error("Update failed", e); }
+            } catch (e) {
+                console.error("Connection Error: Could not reach Google Sheets.", e);
+            }
         }
 
-        setInterval(refreshImage, 5000); // Checks for a new image every 5 seconds
+        // Start the loop
+        setInterval(refreshImage, refreshRate);
+        
+        // Run immediately on page load
+        refreshImage();
     </script>
 </body>
 </html>
